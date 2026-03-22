@@ -1,0 +1,63 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{92F7ABDC-EBBB-452F-A0FD-7AA72DE2A659}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Services", "Services", "{C223740A-771D-4909-A438-82424ECC78A8}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ApiGateway", "src\Services\ApiGateway\ApiGateway.csproj", "{9840EE46-63BB-4EDC-9E40-CCE5A5FF2873}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UploadService", "src\Services\UploadService\UploadService.csproj", "{62BEFF8E-BC60-4C78-AC76-BCDAEC05C599}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DocumentService", "src\Services\DocumentService\DocumentService.csproj", "{43A3F79D-EEF4-448E-846C-D13C40779FE3}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ProcessingService", "src\Services\ProcessingService\ProcessingService.csproj", "{AE4E76E8-02F2-44D1-AACC-3CCC8A5ECF6F}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Shared", "Shared", "{06433FB8-F5F2-4572-A60A-EDB51FB107F8}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Contracts", "src\Shared\Contracts\Contracts.csproj", "{17CA7286-2567-4A23-8414-8759810C3258}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "infrastructure", "infrastructure", "{CEDFFDBB-F5F8-4077-91EB-57E4CC2AC9C6}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{9840EE46-63BB-4EDC-9E40-CCE5A5FF2873}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9840EE46-63BB-4EDC-9E40-CCE5A5FF2873}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9840EE46-63BB-4EDC-9E40-CCE5A5FF2873}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9840EE46-63BB-4EDC-9E40-CCE5A5FF2873}.Release|Any CPU.Build.0 = Release|Any CPU
+		{62BEFF8E-BC60-4C78-AC76-BCDAEC05C599}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{62BEFF8E-BC60-4C78-AC76-BCDAEC05C599}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{62BEFF8E-BC60-4C78-AC76-BCDAEC05C599}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{62BEFF8E-BC60-4C78-AC76-BCDAEC05C599}.Release|Any CPU.Build.0 = Release|Any CPU
+		{43A3F79D-EEF4-448E-846C-D13C40779FE3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{43A3F79D-EEF4-448E-846C-D13C40779FE3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{43A3F79D-EEF4-448E-846C-D13C40779FE3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{43A3F79D-EEF4-448E-846C-D13C40779FE3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AE4E76E8-02F2-44D1-AACC-3CCC8A5ECF6F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AE4E76E8-02F2-44D1-AACC-3CCC8A5ECF6F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AE4E76E8-02F2-44D1-AACC-3CCC8A5ECF6F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AE4E76E8-02F2-44D1-AACC-3CCC8A5ECF6F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{17CA7286-2567-4A23-8414-8759810C3258}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{17CA7286-2567-4A23-8414-8759810C3258}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{17CA7286-2567-4A23-8414-8759810C3258}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{17CA7286-2567-4A23-8414-8759810C3258}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{C223740A-771D-4909-A438-82424ECC78A8} = {92F7ABDC-EBBB-452F-A0FD-7AA72DE2A659}
+		{9840EE46-63BB-4EDC-9E40-CCE5A5FF2873} = {C223740A-771D-4909-A438-82424ECC78A8}
+		{62BEFF8E-BC60-4C78-AC76-BCDAEC05C599} = {C223740A-771D-4909-A438-82424ECC78A8}
+		{43A3F79D-EEF4-448E-846C-D13C40779FE3} = {C223740A-771D-4909-A438-82424ECC78A8}
+		{AE4E76E8-02F2-44D1-AACC-3CCC8A5ECF6F} = {C223740A-771D-4909-A438-82424ECC78A8}
+		{06433FB8-F5F2-4572-A60A-EDB51FB107F8} = {92F7ABDC-EBBB-452F-A0FD-7AA72DE2A659}
+		{17CA7286-2567-4A23-8414-8759810C3258} = {06433FB8-F5F2-4572-A60A-EDB51FB107F8}
+	EndGlobalSection
+EndGlobal

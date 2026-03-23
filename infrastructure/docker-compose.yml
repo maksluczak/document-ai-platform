@@ -4,7 +4,7 @@ services:
     image: 'postgres:latest'
     container_name: 'doc-platform-pg-database'
     ports:
-      - 
+      - 54332:5432
     environment:
       POSTGRES_USER: admin
       POSTGRES_PASSWORD: password

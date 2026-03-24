@@ -1,23 +1,23 @@
+namespace UploadService.Controllers;
+
 using Amazon.S3;
 using Amazon.S3.Model;
 using MassTransit;
 using Microsoft.AspNetCore.Mvc;
 using Contracts.Events;
 
-namespace UploadService.Controllers;
-
 [ApiController]
 [Route("api/[controller]")]
 public class DocumentController : ControllerBase
 {
-    private readonly IAmazonS3 s3Client;
-    private readonly IPublishEndpoint publishEndpoint;
+    private readonly IAmazonS3 _s3Client;
+    private readonly IPublishEndpoint _publishEndpoint;
     private const string BucketName = "documents";
 
     public DocumentController(IAmazonS3 s3Client, IPublishEndpoint publishEndpoint)
     {
-        this.s3Client = s3Client;
-        this.publishEndpoint = publishEndpoint;
+        _s3Client = s3Client;
+        _publishEndpoint = publishEndpoint;
     }
 
     [HttpPost("upload")]
@@ -39,10 +39,10 @@ public class DocumentController : ControllerBase
             InputStream = stream,
             ContentType = file.ContentType
         };
-        await s3Client.PutObjectAsync(putRequest);
+        await _s3Client.PutObjectAsync(putRequest);
 
         var blobUrl = $"http://localhost:9000/{BucketName}/{objectKey}";
-        await publishEndpoint.Publish(new DocumentUploaded(
+        await _publishEndpoint.Publish(new DocumentUploaded(
             documentId,
             file.FileName,
             blobUrl,

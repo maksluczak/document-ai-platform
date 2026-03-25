@@ -61,6 +61,26 @@ public class DocumentUploadedConsumer : IConsumer<DocumentUploaded>
                 if (document.Fields.TryGetValue("InvoiceTotal", out var total))
                     _logger.LogInformation("Total: {total}", total.ValueCurrency?.Amount);
             }
+
+            var extractedData = new Dictionary<string, string>();
+            foreach (var document in result.Documents)
+            {
+                foreach (var field in document.Fields)
+                {
+                    extractedData[field.Key] = field.Value.Content;
+                }
+            }
+
+            await context.Publish(new DocumentProcessed(
+                message.DocumentId,
+                message.FileName,
+                message.BlobUrl,
+                result.Documents.FirstOrDefault()?.DocType ?? "Unknown",
+                extractedData,
+                DateTime.UtcNow
+            ));
+
+            _logger.LogInformation("Sent DocumentProcessed event for: {id}", message.DocumentId);
         }
         catch (Exception ex)
         {

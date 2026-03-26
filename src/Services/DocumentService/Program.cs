@@ -1,14 +1,15 @@
 using DocumentService.Data;
+using DocumentService.Consumers;
 using Microsoft.EntityFrameworkCore;
 using MassTransit;
-using DocumentService.Consumers;
 using dotenv.net;
 using Npgsql;
 
 DotEnv.Load();
 
-var builder = Host.CreateApplicationBuilder(args);
+var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.AddControllers();
 var connectionString = Environment.GetEnvironmentVariable("DATABASE_CONNECTION");
 
 builder.Services.AddDbContext<DocumentDbContext>(options =>
@@ -32,5 +33,7 @@ builder.Services.AddMassTransit(x =>
     });
 });
 
-var host = builder.Build();
-host.Run();
+var app = builder.Build();
+
+app.MapControllers();
+app.Run();

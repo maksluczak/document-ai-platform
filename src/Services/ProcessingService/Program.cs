@@ -1,24 +1,20 @@
-using Amazon.S3;
 using Azure;
-using Azure.AI.DocumentIntelligence;
+using Azure.AI.FormRecognizer.DocumentAnalysis;
+using Amazon.S3;
 using dotenv.net;
 using MassTransit;
 using ProcessingService.Consumers;
 
 DotEnv.Load();
-
 var builder = Host.CreateApplicationBuilder(args);
-
 builder.Configuration.AddEnvironmentVariables();
 
 builder.Services.AddSingleton(sp =>
 {
-    var key = Environment.GetEnvironmentVariable("AZURE_AI_KEY")
-                    ?? builder.Configuration["AzureAi:ApiKey"];
-    var endpoint = Environment.GetEnvironmentVariable("AZURE_AI_ENDPOINT")
-                    ?? builder.Configuration["AzureAi:Endpoint"];
+    var key = builder.Configuration["AZURE_AI_KEY"];
+    var endpoint = builder.Configuration["AZURE_AI_ENDPOINT"]?.TrimEnd('/');
 
-    return new DocumentIntelligenceClient(new Uri(endpoint!), new AzureKeyCredential(key!));
+    return new DocumentAnalysisClient(new Uri(endpoint!), new AzureKeyCredential(key!));
 });
 
 builder.Services.AddSingleton<IAmazonS3>(sp =>

@@ -1,73 +1,70 @@
-namespace ProcessingService.Consumers;
-
 using Amazon.S3;
-using Azure.AI.DocumentIntelligence;
+using Azure;
+using Azure.AI.FormRecognizer.DocumentAnalysis;
 using Contracts.Events;
 using MassTransit;
-using Azure;
+
+namespace ProcessingService.Consumers;
 
 public class DocumentUploadedConsumer : IConsumer<DocumentUploaded>
 {
     private readonly ILogger<DocumentUploadedConsumer> _logger;
     private readonly IAmazonS3 _s3Client;
-    private readonly DocumentIntelligenceClient _azureClient;
+    private readonly DocumentAnalysisClient _analyzeClient;
 
-    public DocumentUploadedConsumer(ILogger<DocumentUploadedConsumer> logger, IAmazonS3 s3Client, DocumentIntelligenceClient azureClient)
+    public DocumentUploadedConsumer(ILogger<DocumentUploadedConsumer> logger, IAmazonS3 s3Client, DocumentAnalysisClient analyzeClient)
     {
         _logger = logger;
         _s3Client = s3Client;
-        _azureClient = azureClient;
+        _analyzeClient = analyzeClient;
     }
 
     public async Task Consume(ConsumeContext<DocumentUploaded> context)
     {
         var message = context.Message;
-
-        _logger.LogInformation("New Message Recieved");
-        _logger.LogInformation("Document ID: {id}", message.DocumentId);
-        _logger.LogInformation("File name: {name}", message.FileName);
-        _logger.LogInformation("File URL: {url}", message.BlobUrl);
+        _logger.LogInformation("Starting processing with FormRecognizer: {name}", message.FileName);
 
         try
         {
             var objectKey = $"{message.DocumentId}-{message.FileName}";
-            var s3Object = await _s3Client.GetObjectAsync(
-                "documents",
-                objectKey
-            );
-            using var stream = s3Object.ResponseStream;
+            var s3Object = await _s3Client.GetObjectAsync("documents", objectKey);
 
-            var analyzeContent = new AnalyzeDocumentContent
-            {
-                Base64Source = await BinaryData.FromStreamAsync(stream)
-            };
+            using var memoryStream = new MemoryStream();
+            await s3Object.ResponseStream.CopyToAsync(memoryStream);
+            memoryStream.Position = 0;
 
-            _logger.LogInformation("Sending to Azure AI: {name}", message.FileName);
-            var operation = await _azureClient.AnalyzeDocumentAsync(
+            _logger.LogInformation("Sending to Azure AI...");
+
+            var operation = await _analyzeClient.AnalyzeDocumentAsync(
                 WaitUntil.Completed,
                 "prebuilt-invoice",
-                analyzeContent
-            );
+                memoryStream);
 
-            var result = operation.Value;
-
-            foreach (var document in result.Documents)
-            {
-                _logger.LogInformation("AI Found document of type: {type}", document.DocType);
-
-                if (document.Fields.TryGetValue("VendorName", out var vendor))
-                    _logger.LogInformation("Vendor: {vendor}", vendor.ValueString);
-
-                if (document.Fields.TryGetValue("InvoiceTotal", out var total))
-                    _logger.LogInformation("Total: {total}", total.ValueCurrency?.Amount);
-            }
+            AnalyzeResult result = operation.Value;
 
             var extractedData = new Dictionary<string, string>();
-            foreach (var document in result.Documents)
+            string docType = "Unknown";
+
+            if (result.Documents.Count > 0)
             {
-                foreach (var field in document.Fields)
+                var doc = result.Documents[0];
+                docType = doc.DocumentType;
+
+                foreach (var field in doc.Fields)
                 {
                     extractedData[field.Key] = field.Value.Content;
+                    _logger.LogInformation("Field: {key} = {value}", field.Key, field.Value.Content);
+                }
+            }
+            else
+            {
+                _logger.LogWarning("No structured document found. Extracting raw lines...");
+                foreach (var page in result.Pages)
+                {
+                    foreach (var line in page.Lines)
+                    {
+                        _logger.LogInformation("Raw text: {text}", line.Content);
+                    }
                 }
             }
 
@@ -75,16 +72,16 @@ public class DocumentUploadedConsumer : IConsumer<DocumentUploaded>
                 message.DocumentId,
                 message.FileName,
                 message.BlobUrl,
-                result.Documents.FirstOrDefault()?.DocType ?? "Unknown",
+                docType,
                 extractedData,
                 DateTime.UtcNow
             ));
 
-            _logger.LogInformation("Sent DocumentProcessed event for: {id}", message.DocumentId);
+            _logger.LogInformation("Successfully published DocumentProcessed for: {id}", message.DocumentId);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error while processing document {id}", message.DocumentId);
+            _logger.LogError(ex, "Error in FormRecognizer Consumer: {id}", message.DocumentId);
             throw;
         }
     }

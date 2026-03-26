@@ -4,6 +4,8 @@ namespace Contracts.Events
         Guid DocumentId,
         string FileName,
         string BlobUrl,
-        DateTime UploadedAt
-    );
+        DateTime UploadedAt)
+    {
+        public DocumentUploaded() : this(Guid.Empty, string.Empty, string.Empty, DateTime.MinValue) { }
+    }
 }

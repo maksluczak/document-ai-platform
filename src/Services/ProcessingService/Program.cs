@@ -1,10 +1,25 @@
 using Amazon.S3;
 using Azure;
 using Azure.AI.DocumentIntelligence;
+using dotenv.net;
 using MassTransit;
 using ProcessingService.Consumers;
 
+DotEnv.Load();
+
 var builder = Host.CreateApplicationBuilder(args);
+
+builder.Configuration.AddEnvironmentVariables();
+
+builder.Services.AddSingleton(sp =>
+{
+    var key = Environment.GetEnvironmentVariable("AZURE_AI_KEY")
+                    ?? builder.Configuration["AzureAi:ApiKey"];
+    var endpoint = Environment.GetEnvironmentVariable("AZURE_AI_ENDPOINT")
+                    ?? builder.Configuration["AzureAi:Endpoint"];
+
+    return new DocumentIntelligenceClient(new Uri(endpoint!), new AzureKeyCredential(key!));
+});
 
 builder.Services.AddSingleton<IAmazonS3>(sp =>
 {
@@ -15,18 +30,7 @@ builder.Services.AddSingleton<IAmazonS3>(sp =>
         ForcePathStyle = true,
         UseHttp = !bool.Parse(config["Secure"] ?? "false")
     };
-
     return new AmazonS3Client(config["Username"], config["Password"], s3Config);
-});
-
-builder.Services.AddSingleton(sp =>
-{
-    var config = builder.Configuration.GetSection("AzureAI");
-
-    return new DocumentIntelligenceClient(
-        new Uri(config["Endpoint"]!),
-        new AzureKeyCredential(config["ApiKey"]!)
-    );
 });
 
 builder.Services.AddMassTransit(x =>

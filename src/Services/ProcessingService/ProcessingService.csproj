@@ -11,7 +11,9 @@
     <PackageReference Include="AWSSDK.S3" Version="4.0.19.1" />
     <PackageReference Include="Azure.AI.DocumentIntelligence" Version="1.0.0-beta.2" />
     <PackageReference Include="Azure.AI.FormRecognizer" Version="4.1.0" />
-    <PackageReference Include="MassTransit.RabbitMQ" Version="9.0.1" />
+    <PackageReference Include="dotenv.net" Version="4.0.1" />
+    <PackageReference Include="MassTransit" Version="8.3.0" />
+    <PackageReference Include="MassTransit.RabbitMQ" Version="8.3.0" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.1" />
     <PackageReference Include="Polly" Version="8.6.6" />
   </ItemGroup>

@@ -1,0 +1,94 @@
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  backdrop-filter: blur(4px);
+  animation: fade-in 0.15s ease;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.modal {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 1.5rem;
+  width: min(480px, 90vw);
+  box-shadow: 0 24px 48px rgba(0,0,0,0.18);
+  animation: slide-up 0.18s ease;
+
+  &__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.2rem;
+  }
+
+  &__title {
+    margin: 0;
+    font-size: 1rem;
+    color: var(--text-h);
+  }
+
+  &__close {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text);
+    font-size: 1rem;
+    padding: 0.2rem 0.4rem;
+    border-radius: 6px;
+    transition: background 0.15s;
+
+    &:hover { background: var(--accent-bg); }
+  }
+
+  &__empty {
+    color: var(--text);
+    font-size: 0.9rem;
+    text-align: center;
+    padding: 1rem 0;
+  }
+
+  &__list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin: 0;
+  }
+
+  &__row {
+    display: flex;
+    gap: 1rem;
+    padding: 0.55rem 0.75rem;
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 0.875rem;
+  }
+
+  &__key {
+    font-weight: 600;
+    color: var(--accent);
+    min-width: 120px;
+    flex-shrink: 0;
+  }
+
+  &__value {
+    color: var(--text-h);
+    margin: 0;
+    word-break: break-all;
+  }
+}
+
+@keyframes slide-up {
+  from { transform: translateY(12px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}

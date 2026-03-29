@@ -1,23 +1,18 @@
-import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
-import DocumentList from './components/DocumentList';
-import { MyDropzone } from './hooks/MyDropzone';
 import './App.scss';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import Navbar from './components/layout/Navbar.jsx';
+import DashboardPage from "./pages/DashboardPage.jsx";
+import UploadPage from "./pages/UploadPage.jsx";
 
 function App() {
     return (
         <Router>
-            <div className="app-layout">
-                <nav className="navbar">
-                    <div className="logo">AI Document System</div>
-                    <div className="links">
-                        <Link to="/upload" className="btn-upload">Add new file</Link>
-                    </div>
-                </nav>
-
-                <main className="content">
+            <div className="app">
+                <Navbar />
+                <main className="app__content">
                     <Routes>
-                        <Route path="/" element={<DocumentList />} />
-                        <Route path="/upload" element={<MyDropzone />} />
+                        <Route path="/" element={<DashboardPage />} />
+                        <Route path="/upload" element={<UploadPage />} />
                     </Routes>
                 </main>
             </div>

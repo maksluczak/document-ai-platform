@@ -1,0 +1,83 @@
+.state-message {
+  padding: 3rem;
+  text-align: center;
+  color: var(--text);
+  font-size: 1rem;
+
+  &--error { color: #ef4444; }
+}
+
+.doc-table-wrapper {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+}
+
+.doc-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+
+  thead tr {
+    background: var(--code-bg);
+    border-bottom: 1px solid var(--border);
+  }
+
+  th {
+    padding: 0.85rem 1.1rem;
+    text-align: left;
+    font-weight: 600;
+    color: var(--text-h);
+    white-space: nowrap;
+  }
+
+  td {
+    padding: 0.8rem 1.1rem;
+    border-bottom: 1px solid var(--border);
+    color: var(--text);
+    vertical-align: middle;
+  }
+
+  tbody tr:last-child td { border-bottom: none; }
+
+  tbody tr:hover { background: var(--accent-bg); }
+
+  &__filename {
+    font-weight: 500;
+    color: var(--text-h);
+  }
+
+  &__link {
+    color: var(--accent);
+    font-size: 0.85rem;
+  }
+}
+
+.badge {
+  display: inline-block;
+  padding: 0.2rem 0.65rem;
+  background: var(--accent-bg);
+  color: var(--accent);
+  border: 1px solid var(--accent-border);
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.meta-btn {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.25rem 0.65rem;
+  font-size: 0.82rem;
+  color: var(--text);
+  cursor: pointer;
+  font-family: var(--sans);
+  transition: border-color 0.15s, color 0.15s;
+
+  &:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+}

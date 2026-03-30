@@ -18,7 +18,7 @@ public class DocumentsController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> GetAll()
     {
-        var docs = _dbContext.Documents.ToListAsync();
+        var docs = await _dbContext.Documents.ToListAsync();
         return Ok(docs);
     }
 }

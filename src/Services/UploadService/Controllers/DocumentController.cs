@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 using Contracts.Events;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/upload")]
 public class DocumentController : ControllerBase
 {
     private readonly IAmazonS3 _s3Client;
@@ -20,35 +20,38 @@ public class DocumentController : ControllerBase
         _publishEndpoint = publishEndpoint;
     }
 
-    [HttpPost("upload")]
-    public async Task<IActionResult> Upload(IFormFile file)
+    [HttpPost]
+    public async Task<IActionResult> Upload(IFormFileCollection files)
     {
-        if (file == null || file.Length == 0)
+        if (files == null || files.Count == 0)
         {
             return BadRequest("No file uploaded");
         }
 
-        var documentId = Guid.NewGuid();
-        var objectKey = $"{documentId}-{file.FileName}";
-
-        using var stream = file.OpenReadStream();
-        var putRequest = new PutObjectRequest
+        foreach (var file in files)
         {
-            BucketName = BucketName,
-            Key = objectKey,
-            InputStream = stream,
-            ContentType = file.ContentType
-        };
-        await _s3Client.PutObjectAsync(putRequest);
+            var documentId = Guid.NewGuid();
+            var objectKey = $"{documentId}-{file.FileName}";
 
-        var blobUrl = $"http://localhost:9000/{BucketName}/{objectKey}";
-        await _publishEndpoint.Publish(new DocumentUploaded(
-            documentId,
-            file.FileName,
-            blobUrl,
-            DateTime.UtcNow
-        ));
+            using var stream = file.OpenReadStream();
+            var putRequest = new PutObjectRequest
+            {
+                BucketName = BucketName,
+                Key = objectKey,
+                InputStream = stream,
+                ContentType = file.ContentType
+            };
+            await _s3Client.PutObjectAsync(putRequest);
 
-        return Ok(new { DocumentId = documentId, Message = "File uploaded and event published" });
+            var blobUrl = $"http://localhost:9000/{BucketName}/{objectKey}";
+            await _publishEndpoint.Publish(new DocumentUploaded(
+                documentId,
+                file.FileName,
+                blobUrl,
+                DateTime.UtcNow
+            ));
+        }
+
+        return Ok(new { Message = "Files uploaded and event published" });
     }
 }

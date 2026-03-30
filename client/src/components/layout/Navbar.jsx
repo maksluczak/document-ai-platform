@@ -1,24 +1,12 @@
 import './Navbar.scss';
+import {Link} from "react-router-dom";
 
-const NAV_ITEMS = [
-    { id: 'upload',    label: 'Upload' },
-];
-
-const Navbar = ({ currentPage, onNavigate }) => (
+const Navbar = () => (
     <nav className="navbar">
-        <span className="navbar__brand">AI Document Platform</span>
-        <ul className="navbar__links">
-            {NAV_ITEMS.map(({ id, label }) => (
-                <li key={id}>
-                    <button
-                        className={`navbar__link ${currentPage === id ? 'navbar__link--active' : ''}`}
-                        onClick={() => onNavigate(id)}
-                    >
-                        {label}
-                    </button>
-                </li>
-            ))}
-        </ul>
+        <Link className="navbar__brand" to="/">AI Document Platform</Link>
+        <div className="navbar__links">
+            <Link className="navbar__link" to="/upload">Upload</Link>
+        </div>
     </nav>
 );
 

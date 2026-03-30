@@ -4,6 +4,7 @@ import './UploadFile.scss';
 
 const UploadFile = () => {
     const [files, setFiles] = useState([]);
+    const [loading, setLoading] = useState(false);
 
     const onDrop = useCallback(acceptedFiles => {
         setFiles(prev => [...prev, ...acceptedFiles]);
@@ -23,40 +24,64 @@ const UploadFile = () => {
         isDragReject  && 'dropzone--rejected',
     ].filter(Boolean).join(' ');
 
+    const handleUpload = async () => {
+        if (files.length === 0) return;
+
+        try {
+            setLoading(true);
+
+            const formData = new FormData();
+            files.forEach(file => {
+                formData.append("files", file);
+            });
+
+            const response = await fetch("http://localhost:8080/api/upload", {
+                method: "POST",
+                body: formData
+            });
+
+            if (!response.ok) {
+                const errorData = await response.text();
+                throw new Error(errorData || "Upload failed.");
+            }
+
+            alert("File uploaded successfully.");
+            setFiles([]);
+
+        } catch (err) {
+            console.error("Upload error:", err);
+            alert(`Error: ${err.message}`);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     return (
         <div className="upload-card">
             <div {...getRootProps()} className={zoneClass}>
                 <input {...getInputProps()} />
-                <div className="dropzone__icon" aria-hidden>
-                    {isDragReject ? '✕' : '↑'}
-                </div>
-                <p className="dropzone__label">
-                    {isDragActive
-                        ? 'Drop files here…'
-                        : 'Drag & drop PDFs here, or click to browse'}
-                </p>
-                <span className="dropzone__hint">Only .pdf files are accepted</span>
+                <div className="dropzone__icon">↑</div>
+                <p className="dropzone__label">Drag & drop PDFs here</p>
             </div>
-
             {files.length > 0 && (
                 <ul className="file-list">
                     {files.map(file => (
                         <li key={file.name} className="file-list__item">
-                            <span className="file-list__name">{file.name}</span>
-                            <span className="file-list__size">
-                                {(file.size / 1024).toFixed(1)} KB
-                            </span>
-                            <button
-                                className="file-list__remove"
-                                onClick={() => removeFile(file.name)}
-                                aria-label={`Remove ${file.name}`}
-                            >
-                                ✕
-                            </button>
+                            {file.name}
+                            <button onClick={() => removeFile(file.name)}>✕</button>
                         </li>
                     ))}
                 </ul>
             )}
+            <div className="upload-actions">
+                <button
+                    className="btn-primary"
+                    onClick={handleUpload}
+                    disabled={loading || files.length === 0}
+                >
+                    {loading ? 'Uploading...' : `Upload ${files.length} files`}
+                </button>
+            </div>
         </div>
     );
 };

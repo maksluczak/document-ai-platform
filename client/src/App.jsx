@@ -11,7 +11,7 @@ function App() {
                 <Navbar />
                 <main className="app__content">
                     <Routes>
-                        <Route path="/" element={<DashboardPage />} />
+                        <Route index element={<DashboardPage />} />
                         <Route path="/upload" element={<UploadPage />} />
                     </Routes>
                 </main>

@@ -5,6 +5,7 @@ using Amazon.S3.Model;
 using MassTransit;
 using Microsoft.AspNetCore.Mvc;
 using Contracts.Events;
+using UploadService.Validation;
 
 [ApiController]
 [Route("api/upload")]
@@ -12,12 +13,14 @@ public class DocumentController : ControllerBase
 {
     private readonly IAmazonS3 _s3Client;
     private readonly IPublishEndpoint _publishEndpoint;
+    private readonly FileValidator _fileValidator;
     private const string BucketName = "documents";
 
-    public DocumentController(IAmazonS3 s3Client, IPublishEndpoint publishEndpoint)
+    public DocumentController(IAmazonS3 s3Client, IPublishEndpoint publishEndpoint, FileValidator fileValidator)
     {
         _s3Client = s3Client;
         _publishEndpoint = publishEndpoint;
+        _fileValidator = fileValidator;
     }
 
     [HttpPost]
@@ -30,6 +33,10 @@ public class DocumentController : ControllerBase
 
         foreach (var file in files)
         {
+            if (!_fileValidator.IsValidExtension(file.FileName))
+            {
+                return BadRequest(new { Message = $"File {file.FileName} has invalid extension." });
+            }
             var documentId = Guid.NewGuid();
             var objectKey = $"{documentId}-{file.FileName}";
 

@@ -1,6 +1,6 @@
 namespace UploadService.Validation;
 
-public class FileValidator
+public class FileValidator : IFileValidator
 {
     private static readonly string[] AllowedExtensions = { ".pdf" };
 

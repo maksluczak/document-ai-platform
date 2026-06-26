@@ -4,7 +4,7 @@ using Xunit;
 using FluentAssertions;
 using UploadService.Validation;
 
-public class UnitTest1
+public class FileValidatorTests
 {
     [Fact]
     public void IsValidExtension_WhenFileIsPdf_ShouldReturnTrue()

@@ -5,7 +5,6 @@ using Amazon.S3.Model;
 using MassTransit;
 using Microsoft.AspNetCore.Mvc;
 using Contracts.Events;
-using UploadService.Validation;
 
 [ApiController]
 [Route("api/upload")]
@@ -13,10 +12,10 @@ public class DocumentController : ControllerBase
 {
     private readonly IAmazonS3 _s3Client;
     private readonly IPublishEndpoint _publishEndpoint;
-    private readonly FileValidator _fileValidator;
+    private readonly IFileValidator _fileValidator;
     private const string BucketName = "documents";
 
-    public DocumentController(IAmazonS3 s3Client, IPublishEndpoint publishEndpoint, FileValidator fileValidator)
+    public DocumentController(IAmazonS3 s3Client, IPublishEndpoint publishEndpoint, IFileValidator fileValidator)
     {
         _s3Client = s3Client;
         _publishEndpoint = publishEndpoint;

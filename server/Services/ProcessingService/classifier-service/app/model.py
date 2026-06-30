@@ -1,4 +1,5 @@
 import os
+import torch
 from transformers import pipeline
 
 MODEL_PATH = os.getenv("MODEL_PATH", "./model")
@@ -27,7 +28,7 @@ def get_classifier():
 
 def predict(text: str):
     clf = get_classifier()
-    result = clf(text[:1000], truncation=True)[0]
+    result = clf(text[:2000], truncation=True)[0]
     doc_type   = result["label"]
     confidence = round(result["score"], 4)
     azure_model = AZURE_MODEL_MAP.get(doc_type, "prebuilt-read")

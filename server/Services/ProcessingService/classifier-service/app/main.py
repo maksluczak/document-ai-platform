@@ -11,10 +11,12 @@ def health():
 
 @app.post("/classify", response_model=ClassifierResponse)
 def classify(request: ClassifierRequest):
-    if not request.text and len(request.text) < 10:
+    if not request.text or len(request.text.strip()) < 10:
         raise HTTPException(status_code=400, detail="Bad request. Text is too short.")
 
-    doc_type, confidence, azure_model = predict(request.text)
+    truncated_text = request.text[:2000]
+    doc_type, confidence, azure_model = predict(truncated_text)
+
     return ClassifierResponse(
         document_type=doc_type,
         confidence=confidence,

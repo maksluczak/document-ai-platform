@@ -1,0 +1,34 @@
+{
+  "label2id": {
+    "bank_statement": 0,
+    "hr": 1,
+    "invoice": 2,
+    "legal": 3,
+    "logistics": 4,
+    "other": 5,
+    "receipt": 6,
+    "tax_document": 7
+  },
+  "id2label": {
+    "0": "bank_statement",
+    "1": "hr",
+    "2": "invoice",
+    "3": "legal",
+    "4": "logistics",
+    "5": "other",
+    "6": "receipt",
+    "7": "tax_document"
+  },
+  "labels": [
+    "bank_statement",
+    "hr",
+    "invoice",
+    "legal",
+    "logistics",
+    "other",
+    "receipt",
+    "tax_document"
+  ],
+  "model_name": "distilbert-base-multilingual-cased",
+  "num_labels": 8
+}

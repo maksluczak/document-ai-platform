@@ -3,6 +3,7 @@ using Azure;
 using Azure.AI.FormRecognizer.DocumentAnalysis;
 using Contracts.Events;
 using MassTransit;
+using ProcessingService.Classifier;
 
 namespace ProcessingService.Consumers;
 
@@ -11,12 +12,18 @@ public class DocumentUploadedConsumer : IConsumer<DocumentUploaded>
     private readonly ILogger<DocumentUploadedConsumer> _logger;
     private readonly IAmazonS3 _s3Client;
     private readonly DocumentAnalysisClient _analyzeClient;
+    private readonly DocumentClassifier _documentClassifier;
 
-    public DocumentUploadedConsumer(ILogger<DocumentUploadedConsumer> logger, IAmazonS3 s3Client, DocumentAnalysisClient analyzeClient)
+    public DocumentUploadedConsumer(
+        ILogger<DocumentUploadedConsumer> logger,
+        IAmazonS3 s3Client,
+        DocumentAnalysisClient analyzeClient,
+        DocumentClassifier documentClassifier)
     {
         _logger = logger;
         _s3Client = s3Client;
         _analyzeClient = analyzeClient;
+        _documentClassifier = documentClassifier;
     }
 
     public async Task Consume(ConsumeContext<DocumentUploaded> context)
@@ -33,11 +40,15 @@ public class DocumentUploadedConsumer : IConsumer<DocumentUploaded>
             await s3Object.ResponseStream.CopyToAsync(memoryStream);
             memoryStream.Position = 0;
 
+            _logger.LogInformation("Sending to classifier...");
+
+            ClassificationResult classificationResult = await _documentClassifier.ClassifyAsync("");
+
             _logger.LogInformation("Sending to Azure AI...");
 
             var operation = await _analyzeClient.AnalyzeDocumentAsync(
                 WaitUntil.Completed,
-                "prebuilt-invoice",
+                classificationResult.AzureModel,
                 memoryStream);
 
             AnalyzeResult result = operation.Value;

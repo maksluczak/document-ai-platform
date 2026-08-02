@@ -3,6 +3,7 @@ using Azure;
 using Azure.AI.FormRecognizer.DocumentAnalysis;
 using Contracts.Events;
 using MassTransit;
+using ProcessingService.Classifier;
 
 namespace ProcessingService.Consumers;
 
@@ -11,12 +12,18 @@ public class DocumentUploadedConsumer : IConsumer<DocumentUploaded>
     private readonly ILogger<DocumentUploadedConsumer> _logger;
     private readonly IAmazonS3 _s3Client;
     private readonly DocumentAnalysisClient _analyzeClient;
+    private readonly DocumentClassifier _documentClassifier;
 
-    public DocumentUploadedConsumer(ILogger<DocumentUploadedConsumer> logger, IAmazonS3 s3Client, DocumentAnalysisClient analyzeClient)
+    public DocumentUploadedConsumer(
+        ILogger<DocumentUploadedConsumer> logger,
+        IAmazonS3 s3Client,
+        DocumentAnalysisClient analyzeClient,
+        DocumentClassifier documentClassifier)
     {
         _logger = logger;
         _s3Client = s3Client;
         _analyzeClient = analyzeClient;
+        _documentClassifier = documentClassifier;
     }
 
     public async Task Consume(ConsumeContext<DocumentUploaded> context)
@@ -33,17 +40,38 @@ public class DocumentUploadedConsumer : IConsumer<DocumentUploaded>
             await s3Object.ResponseStream.CopyToAsync(memoryStream);
             memoryStream.Position = 0;
 
-            _logger.LogInformation("Sending to Azure AI...");
-
-            var operation = await _analyzeClient.AnalyzeDocumentAsync(
+            _logger.LogInformation("Extracting text for classification...");
+            var readOperation = await _analyzeClient.AnalyzeDocumentAsync(
                 WaitUntil.Completed,
-                "prebuilt-invoice",
+                "prebuilt-read",
                 memoryStream);
 
-            AnalyzeResult result = operation.Value;
+            AnalyzeResult readResult = readOperation.Value;
+            var extractedText = string.Join(
+                " ",
+                readResult.Pages.SelectMany(p => p.Lines).Select(l => l.Content));
+
+            _logger.LogInformation("Sending to classifier...");
+            ClassificationResult classificationResult = await _documentClassifier.ClassifyAsync(extractedText);
+
+            AnalyzeResult result;
+            if (classificationResult.AzureModel == "prebuilt-read")
+            {
+                result = readResult;
+            }
+            else
+            {
+                _logger.LogInformation("Sending to Azure AI with model {model}...", classificationResult.AzureModel);
+                memoryStream.Position = 0;
+                var analyzeOperation = await _analyzeClient.AnalyzeDocumentAsync(
+                    WaitUntil.Completed,
+                    classificationResult.AzureModel,
+                    memoryStream);
+                result = analyzeOperation.Value;
+            }
 
             var extractedData = new Dictionary<string, string>();
-            string docType = "Unknown";
+            string docType = classificationResult.DocumentType;
 
             if (result.Documents.Count > 0)
             {

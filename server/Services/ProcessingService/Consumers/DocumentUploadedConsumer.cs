@@ -40,21 +40,38 @@ public class DocumentUploadedConsumer : IConsumer<DocumentUploaded>
             await s3Object.ResponseStream.CopyToAsync(memoryStream);
             memoryStream.Position = 0;
 
-            _logger.LogInformation("Sending to classifier...");
-
-            ClassificationResult classificationResult = await _documentClassifier.ClassifyAsync("");
-
-            _logger.LogInformation("Sending to Azure AI...");
-
-            var operation = await _analyzeClient.AnalyzeDocumentAsync(
+            _logger.LogInformation("Extracting text for classification...");
+            var readOperation = await _analyzeClient.AnalyzeDocumentAsync(
                 WaitUntil.Completed,
-                classificationResult.AzureModel,
+                "prebuilt-read",
                 memoryStream);
 
-            AnalyzeResult result = operation.Value;
+            AnalyzeResult readResult = readOperation.Value;
+            var extractedText = string.Join(
+                " ",
+                readResult.Pages.SelectMany(p => p.Lines).Select(l => l.Content));
+
+            _logger.LogInformation("Sending to classifier...");
+            ClassificationResult classificationResult = await _documentClassifier.ClassifyAsync(extractedText);
+
+            AnalyzeResult result;
+            if (classificationResult.AzureModel == "prebuilt-read")
+            {
+                result = readResult;
+            }
+            else
+            {
+                _logger.LogInformation("Sending to Azure AI with model {model}...", classificationResult.AzureModel);
+                memoryStream.Position = 0;
+                var analyzeOperation = await _analyzeClient.AnalyzeDocumentAsync(
+                    WaitUntil.Completed,
+                    classificationResult.AzureModel,
+                    memoryStream);
+                result = analyzeOperation.Value;
+            }
 
             var extractedData = new Dictionary<string, string>();
-            string docType = "Unknown";
+            string docType = classificationResult.DocumentType;
 
             if (result.Documents.Count > 0)
             {

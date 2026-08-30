@@ -1,0 +1,35 @@
+version: '3.8'
+services:
+  upload-service:
+    build:
+      context: .
+      dockerfile: ./server/Services/UploadService/Dockerfile
+
+  processing-service:
+    build:
+      context: .
+      dockerfile: ./server/Services/ProcessingService/Dockerfile
+
+  document-service:
+    build:
+      context: .
+      dockerfile: ./server/Services/DocumentService/Dockerfile
+
+  api-gateway:
+    build:
+      context: .
+      dockerfile: ./server/Services/ApiGateway/Dockerfile
+
+  classifier:
+    build:
+      context: .
+      dockerfile: ./server/ML/Dockerfile
+
+  frontend:
+    build:
+      context: .
+      dockerfile: ./client/Dockerfile
+
+networks:
+  doc-platform-net:
+    external: true

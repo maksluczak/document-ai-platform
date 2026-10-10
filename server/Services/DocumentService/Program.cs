@@ -10,9 +10,11 @@ DotEnv.Load();
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
-var connectionString = Environment.GetEnvironmentVariable("DATABASE_CONNECTION");
+var cs = builder.Configuration.GetConnectionString("PostgresDb")
+    ?? throw new InvalidOperationException("Missing ConnectionStrings:PostgresDb");
 
-builder.Services.AddDbContext<DocumentDbContext>(options =>
+builder.Services.AddNpgsqlDataSource(cs, b => b.EnableDynamicJson());
+builder.Services.AddDbContext<DocumentDbContext>((sp, options) =>
 {
     var connectionString = Environment.GetEnvironmentVariable("DATABASE_CONNECTION");
 
@@ -34,6 +36,9 @@ builder.Services.AddMassTransit(x =>
 });
 
 var app = builder.Build();
+
+using (var scope = app.Services.CreateScope())
+    await scope.ServiceProvider.GetRequiredService<DocumentDbContext>().Database.MigrateAsync();
 
 app.MapControllers();
 app.Run();

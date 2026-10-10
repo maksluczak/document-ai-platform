@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace ProcessingService.Classifier;
 
 public record ClassifierRequest(
@@ -5,9 +7,9 @@ public record ClassifierRequest(
 );
 
 public record ClassificationResponse(
-    string DocumentType,
-    float Confidence,
-    string AzureModel
+    [property: JsonPropertyName("document_type")] string DocumentType,
+    [property: JsonPropertyName("confidence")] float Confidence,
+    [property: JsonPropertyName("azure_model")] string AzureModel
 );
 
 public record ClassificationResult(

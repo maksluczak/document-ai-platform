@@ -58,7 +58,7 @@ public class DocumentClassifierTests
     {
         var sut = CreateSut(
             HttpStatusCode.OK,
-            new { documentType = "invoice", confidence = 0.92f, azureModel = "prebuilt-invoice" },
+            new { document_type = "invoice", confidence = 0.92f, azure_model = "prebuilt-invoice" },
             out _,
             out _);
 
@@ -74,7 +74,7 @@ public class DocumentClassifierTests
     {
         var sut = CreateSut(
             HttpStatusCode.OK,
-            new { documentType = "hr", confidence = 0.4f, azureModel = "prebuilt-document" },
+            new { document_type = "hr", confidence = 0.4f, azure_model = "prebuilt-document" },
             out _,
             out _);
 
@@ -100,7 +100,7 @@ public class DocumentClassifierTests
         var longText = new string('a', 5000);
         var sut = CreateSut(
             HttpStatusCode.OK,
-            new { documentType = "other", confidence = 0.9f, azureModel = "prebuilt-read" },
+            new { document_type = "other", confidence = 0.9f, azure_model = "prebuilt-read" },
             out _,
             out var capturedBodies);
 

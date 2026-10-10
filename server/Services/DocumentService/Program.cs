@@ -2,28 +2,20 @@ using DocumentService.Data;
 using DocumentService.Consumers;
 using Microsoft.EntityFrameworkCore;
 using MassTransit;
-using dotenv.net;
 using Npgsql;
-
-DotEnv.Load();
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
-var cs = builder.Configuration.GetConnectionString("PostgresDb")
+var connectionString = builder.Configuration.GetConnectionString("PostgresDb")
     ?? throw new InvalidOperationException("Missing ConnectionStrings:PostgresDb");
 
-builder.Services.AddNpgsqlDataSource(cs, b => b.EnableDynamicJson());
-builder.Services.AddDbContext<DocumentDbContext>((sp, options) =>
-{
-    var connectionString = Environment.GetEnvironmentVariable("DATABASE_CONNECTION");
+builder.Services.AddNpgsqlDataSource(
+    connectionString,
+    dataSourceBuilder => dataSourceBuilder.EnableDynamicJson());
 
-    var dataSourceBuilder = new NpgsqlDataSourceBuilder(connectionString);
-    dataSourceBuilder.EnableDynamicJson();
-    var dataSource = dataSourceBuilder.Build();
-
-    options.UseNpgsql(dataSource);
-});
+builder.Services.AddDbContext<DocumentDbContext>((serviceProvider, options) =>
+    options.UseNpgsql(serviceProvider.GetRequiredService<NpgsqlDataSource>()));
 
 builder.Services.AddMassTransit(x =>
 {

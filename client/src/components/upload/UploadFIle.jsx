@@ -20,8 +20,8 @@ const UploadFile = () => {
 
     const zoneClass = [
         'dropzone',
-        isDragActive  && 'dropzone--active',
-        isDragReject  && 'dropzone--rejected',
+        isDragActive && 'dropzone--active',
+        isDragReject && 'dropzone--rejected',
     ].filter(Boolean).join(' ');
 
     const handleUpload = async () => {

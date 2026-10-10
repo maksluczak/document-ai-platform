@@ -5,6 +5,7 @@ using Amazon.S3.Model;
 using MassTransit;
 using Microsoft.AspNetCore.Mvc;
 using Contracts.Events;
+using UploadService.Validation;
 
 [ApiController]
 [Route("api/upload")]

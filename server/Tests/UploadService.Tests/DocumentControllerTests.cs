@@ -7,6 +7,7 @@ using Contracts.Events;
 using Amazon.S3.Model;
 using Microsoft.AspNetCore.Mvc;
 using FluentAssertions;
+using UploadService.Validation;
 
 public class DocumentControllerTests
 {

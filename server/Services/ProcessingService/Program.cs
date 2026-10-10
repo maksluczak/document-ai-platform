@@ -4,6 +4,8 @@ using Amazon.S3;
 using dotenv.net;
 using MassTransit;
 using ProcessingService.Consumers;
+using ProcessingService.Analysis;
+using ProcessingService.Classifier;
 
 DotEnv.Load();
 var builder = Host.CreateApplicationBuilder(args);
@@ -27,6 +29,14 @@ builder.Services.AddSingleton<IAmazonS3>(sp =>
         UseHttp = !bool.Parse(config["Secure"] ?? "false")
     };
     return new AmazonS3Client(config["Username"], config["Password"], s3Config);
+});
+
+builder.Services.AddSingleton<IDocumentAnalysisService, DocumentAnalysisService>();
+
+builder.Services.AddHttpClient<IDocumentClassifier, DocumentClassifier>(c =>
+{
+    c.BaseAddress = new Uri(builder.Configuration["Classifier:BaseUrl"] ?? "http://localhost:8000");
+    c.Timeout = TimeSpan.FromSeconds(30);
 });
 
 builder.Services.AddMassTransit(x =>

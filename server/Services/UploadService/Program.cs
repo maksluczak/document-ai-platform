@@ -1,6 +1,7 @@
 using Amazon.S3;
 using MassTransit;
 using UploadService.Configuration;
+using UploadService.Validation;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -29,6 +30,8 @@ builder.Services.AddMassTransit(x =>
         cfg.Host(host, "/");
     });
 });
+
+builder.Services.AddSingleton<IFileValidator, FileValidator>();
 
 var app = builder.Build();
 

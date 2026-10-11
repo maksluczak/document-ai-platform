@@ -22,12 +22,17 @@ builder.Services.AddSingleton<IAmazonS3>(sp =>
     return new AmazonS3Client(options.Username, options.Password, clientConfig);
 });
 
-builder.Services.AddMassTransit(x =>
+builder.Services.AddMassTransit(registration =>
 {
-    x.UsingRabbitMq((context, cfg) =>
+    registration.UsingRabbitMq((context, rabbitMq) =>
     {
-        var host = builder.Configuration.GetValue<string>("RabbitMqConnection:Host");
-        cfg.Host(host, "/");
+        var rabbitMqSection = builder.Configuration.GetSection("RabbitMqConnection");
+
+        rabbitMq.Host(rabbitMqSection["Host"] ?? "localhost", "/", hostSettings =>
+        {
+            hostSettings.Username(rabbitMqSection["Username"] ?? "guest");
+            hostSettings.Password(rabbitMqSection["Password"] ?? "guest");
+        });
     });
 });
 

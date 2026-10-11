@@ -1,25 +1,25 @@
 using Azure;
 using Azure.AI.FormRecognizer.DocumentAnalysis;
 using Amazon.S3;
-using dotenv.net;
 using MassTransit;
 using ProcessingService.Consumers;
 using ProcessingService.Analysis;
 using ProcessingService.Classifier;
 
-DotEnv.Load();
 var builder = Host.CreateApplicationBuilder(args);
-builder.Configuration.AddEnvironmentVariables();
 
-builder.Services.AddSingleton(sp =>
+builder.Services.AddSingleton(serviceProvider =>
 {
-    var key = builder.Configuration["AZURE_AI_KEY"];
-    var endpoint = builder.Configuration["AZURE_AI_ENDPOINT"]?.TrimEnd('/');
+    var endpoint = builder.Configuration["AzureAi:Endpoint"];
+    var apiKey = builder.Configuration["AzureAi:ApiKey"];
 
-    return new DocumentAnalysisClient(new Uri(endpoint!), new AzureKeyCredential(key!));
+    if (string.IsNullOrWhiteSpace(endpoint) || string.IsNullOrWhiteSpace(apiKey))
+        throw new InvalidOperationException("Missing AzureAi:Endpoint or AzureAi:ApiKey");
+
+    return new DocumentAnalysisClient(new Uri(endpoint.TrimEnd('/')), new AzureKeyCredential(apiKey));
 });
 
-builder.Services.AddSingleton<IAmazonS3>(sp =>
+builder.Services.AddSingleton<IAmazonS3>(serviceProvider =>
 {
     var config = builder.Configuration.GetSection("MinIOConnection");
     var s3Config = new AmazonS3Config
@@ -39,14 +39,20 @@ builder.Services.AddHttpClient<IDocumentClassifier, DocumentClassifier>(c =>
     c.Timeout = TimeSpan.FromSeconds(30);
 });
 
-builder.Services.AddMassTransit(x =>
+builder.Services.AddMassTransit(registration =>
 {
-    x.AddConsumer<DocumentUploadedConsumer>();
+    registration.AddConsumer<DocumentUploadedConsumer>();
 
-    x.UsingRabbitMq((context, cfg) =>
+    registration.UsingRabbitMq((context, rabbitMq) =>
     {
-        cfg.Host("localhost", "/");
-        cfg.ConfigureEndpoints(context);
+        var rabbitMqSection = builder.Configuration.GetSection("RabbitMqConnection");
+
+        rabbitMq.Host(rabbitMqSection["Host"] ?? "localhost", "/", hostSettings =>
+        {
+            hostSettings.Username(rabbitMqSection["Username"] ?? "guest");
+            hostSettings.Password(rabbitMqSection["Password"] ?? "guest");
+        });
+        rabbitMq.ConfigureEndpoints(context);
     });
 });
 

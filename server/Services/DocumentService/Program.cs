@@ -17,13 +17,20 @@ builder.Services.AddNpgsqlDataSource(
 builder.Services.AddDbContext<DocumentDbContext>((serviceProvider, options) =>
     options.UseNpgsql(serviceProvider.GetRequiredService<NpgsqlDataSource>()));
 
-builder.Services.AddMassTransit(x =>
+builder.Services.AddMassTransit(registration =>
 {
-    x.AddConsumer<DocumentProcessedConsumer>();
-    x.UsingRabbitMq((context, cfg) =>
+    registration.AddConsumer<DocumentProcessedConsumer>();
+
+    registration.UsingRabbitMq((context, rabbitMq) =>
     {
-        cfg.Host("localhost", "/");
-        cfg.ConfigureEndpoints(context);
+        var rabbitMqSection = builder.Configuration.GetSection("RabbitMqConnection");
+
+        rabbitMq.Host(rabbitMqSection["Host"] ?? "localhost", "/", hostSettings =>
+        {
+            hostSettings.Username(rabbitMqSection["Username"] ?? "guest");
+            hostSettings.Password(rabbitMqSection["Password"] ?? "guest");
+        });
+        rabbitMq.ConfigureEndpoints(context);
     });
 });
 

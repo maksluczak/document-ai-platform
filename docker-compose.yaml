@@ -11,6 +11,10 @@ services:
       - postgres_data:/var/lib/postgresql/data
     ports:
       - "54332:5432"
+    healthcheck:
+      test: pg_isready -U ${POSTGRES_USER} -d DocumentDb
+      interval: 5s
+      retries: 20
 
   rabbitmq:
     image: rabbitmq:4-management
@@ -20,6 +24,10 @@ services:
     ports:
       - "5672:5672"
       - "15672:15672"
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 10s
+      retries: 20
 
   minio:
     image: cgr.dev/chainguard/minio:latest
@@ -50,6 +58,8 @@ services:
       MinIOConnection__Username: ${MINIO_ROOT_USER}
       MinIOConnection__Password: ${MINIO_ROOT_PASSWORD}
     depends_on:
+      rabbitmq:
+        condition: service_healthy
       minio:
         condition: service_started
 
@@ -68,6 +78,8 @@ services:
       AzureAi__Endpoint: ${AZURE_AI_ENDPOINT}
       AzureAi__ApiKey: ${AZURE_AI_KEY}
     depends_on:
+      rabbitmq:
+        condition: service_healthy
       minio:
         condition: service_started
       classifier:
@@ -82,6 +94,11 @@ services:
       RabbitMqConnection__Username: ${RABBITMQ_USER}
       RabbitMqConnection__Password: ${RABBITMQ_PASSWORD}
       ConnectionStrings__PostgresDb: Host=database;Port=5432;Database=DocumentDb;Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}
+    depends_on:
+      database:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
 
   api-gateway:
     build:

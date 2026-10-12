@@ -38,7 +38,7 @@ services:
     volumes:
       - minio_data:/data
     ports:
-      - "${MINIO_API_PORT}:9900"
+      - "${MINIO_API_PORT}:9000"
       - "9001:9001"
 
   classifier:
@@ -54,7 +54,7 @@ services:
       RabbitMqConnection__Host: rabbitmq
       RabbitMqConnection__Username: ${RABBITMQ_USER}
       RabbitMqConnection__Password: ${RABBITMQ_PASSWORD}
-      MinIOConnection__ServiceUrl: http://minio:9900
+      MinIOConnection__ServiceUrl: http://minio:9000
       MinIOConnection__Username: ${MINIO_ROOT_USER}
       MinIOConnection__Password: ${MINIO_ROOT_PASSWORD}
     depends_on:
@@ -71,7 +71,7 @@ services:
       RabbitMqConnection__Host: rabbitmq
       RabbitMqConnection__Username: ${RABBITMQ_USER}
       RabbitMqConnection__Password: ${RABBITMQ_PASSWORD}
-      MinIOConnection__ServiceUrl: http://minio:9900
+      MinIOConnection__ServiceUrl: http://minio:9000
       MinIOConnection__Username: ${MINIO_ROOT_USER}
       MinIOConnection__Password: ${MINIO_ROOT_PASSWORD}
       Classifier__BaseUrl: http://classifier:8000

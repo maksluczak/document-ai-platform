@@ -1,0 +1,106 @@
+name: document-ai-platform
+
+services:
+  database:
+    image: postgres:17
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: DocumentDb
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "54332:5432"
+
+  rabbitmq:
+    image: rabbitmq:4-management
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+
+  minio:
+    image: cgr.dev/chainguard/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    volumes:
+      - minio_data:/data
+    ports:
+      - "${MINIO_API_PORT}:9900"
+      - "9001:9001"
+
+  classifier:
+    build: ./server/ML/classifier-service
+    volumes:
+      - ./server/ML/classifier-service/model:/models/document-classifier:ro
+
+  upload-service:
+    build:
+      context: ./server
+      dockerfile: Services/UploadService/Dockerfile
+    environment:
+      RabbitMqConnection__Host: rabbitmq
+      RabbitMqConnection__Username: ${RABBITMQ_USER}
+      RabbitMqConnection__Password: ${RABBITMQ_PASSWORD}
+      MinIOConnection__ServiceUrl: http://minio:9900
+      MinIOConnection__Username: ${MINIO_ROOT_USER}
+      MinIOConnection__Password: ${MINIO_ROOT_PASSWORD}
+    depends_on:
+      minio:
+        condition: service_started
+
+  processing-service:
+    build:
+      context: ./server
+      dockerfile: Services/ProcessingService/Dockerfile
+    environment:
+      RabbitMqConnection__Host: rabbitmq
+      RabbitMqConnection__Username: ${RABBITMQ_USER}
+      RabbitMqConnection__Password: ${RABBITMQ_PASSWORD}
+      MinIOConnection__ServiceUrl: http://minio:9900
+      MinIOConnection__Username: ${MINIO_ROOT_USER}
+      MinIOConnection__Password: ${MINIO_ROOT_PASSWORD}
+      Classifier__BaseUrl: http://classifier:8000
+      AzureAi__Endpoint: ${AZURE_AI_ENDPOINT}
+      AzureAi__ApiKey: ${AZURE_AI_KEY}
+    depends_on:
+      minio:
+        condition: service_started
+      classifier:
+        condition: service_started
+
+  document-service:
+    build:
+      context: ./server
+      dockerfile: Services/DocumentService/Dockerfile
+    environment:
+      RabbitMqConnection__Host: rabbitmq
+      RabbitMqConnection__Username: ${RABBITMQ_USER}
+      RabbitMqConnection__Password: ${RABBITMQ_PASSWORD}
+      ConnectionStrings__PostgresDb: Host=database;Port=5432;Database=DocumentDb;Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}
+
+  api-gateway:
+    build:
+      context: ./server
+      dockerfile: Services/ApiGateway/Dockerfile
+    environment:
+      ReverseProxy__Clusters__upload-cluster__Destinations__destination1__Address: http://upload-service:8080
+      ReverseProxy__Clusters__documents-cluster__Destinations__destination1__Address: http://document-service:8080
+    depends_on:
+      - upload-service
+      - document-service
+
+  frontend:
+    build: ./client
+    ports:
+      - "${FRONTEND_PORT}:8080"
+    depends_on:
+      - api-gateway
+
+volumes:
+  postgres_data:
+  minio_data:

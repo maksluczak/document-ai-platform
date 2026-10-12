@@ -40,5 +40,21 @@ builder.Services.AddSingleton<IFileValidator, FileValidator>();
 
 var app = builder.Build();
 
+const string bucketName = "documents";
+var s3Client = app.Services.GetRequiredService<IAmazonS3>();
+
+for (var attempt = 1; ; attempt++)
+{
+    try
+    {
+        await s3Client.EnsureBucketExistsAsync(bucketName);
+        break;
+    }
+    catch (Exception) when (attempt < 10)
+    {
+        await Task.Delay(TimeSpan.FromSeconds(2));
+    }
+}
+
 app.MapControllers();
 app.Run();

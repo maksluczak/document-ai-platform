@@ -36,12 +36,13 @@ public class DocumentUploadedConsumer : IConsumer<DocumentUploaded>
             var objectKey = $"{message.DocumentId}-{message.FileName}";
             var s3Object = await _s3Client.GetObjectAsync("documents", objectKey);
 
-            using var memoryStream = new MemoryStream();
-            await s3Object.ResponseStream.CopyToAsync(memoryStream);
-            memoryStream.Position = 0;
+            using var downloadStream = new MemoryStream();
+            await s3Object.ResponseStream.CopyToAsync(downloadStream);
+            byte[] documentBytes = downloadStream.ToArray();
 
             _logger.LogInformation("Extracting text for classification...");
-            AnalyzeResult readResult = await _analysisService.AnalyzeAsync("prebuilt-read", memoryStream);
+            using var readStream = new MemoryStream(documentBytes);
+            AnalyzeResult readResult = await _analysisService.AnalyzeAsync("prebuilt-read", readStream);
             var extractedText = string.Join(
                 " ",
                 readResult.Pages.SelectMany(p => p.Lines).Select(l => l.Content));
@@ -57,8 +58,8 @@ public class DocumentUploadedConsumer : IConsumer<DocumentUploaded>
             else
             {
                 _logger.LogInformation("Sending to Azure AI with model {model}...", classificationResult.AzureModel);
-                memoryStream.Position = 0;
-                result = await _analysisService.AnalyzeAsync(classificationResult.AzureModel, memoryStream);
+                using var modelStream = new MemoryStream(documentBytes);
+                result = await _analysisService.AnalyzeAsync(classificationResult.AzureModel, modelStream);
             }
 
             var extractedData = new Dictionary<string, string>();

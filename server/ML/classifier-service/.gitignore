@@ -76,3 +76,5 @@ credentials.json
 *.sln
 *.swp
 .DS_Store
+model/.cache/
+model/.gitattributes

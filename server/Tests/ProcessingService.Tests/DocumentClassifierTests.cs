@@ -81,7 +81,7 @@ public class DocumentClassifierTests
         var result = await sut.ClassifyAsync("Jakiś niejednoznaczny tekst dokumentu.");
 
         Assert.Equal("other", result.DocumentType);
-        Assert.Equal("prebuilt-document", result.AzureModel);
+        Assert.Equal("prebuilt-read", result.AzureModel);
         Assert.Equal(0.4f, result.Confidence);
     }
 

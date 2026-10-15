@@ -110,6 +110,95 @@ public class DocumentUploadedConsumerTests
     }
 
     [Fact]
+    public async Task Consume_PublishesKeyValuePairs_WhenModelReturnsNoStructuredDocument()
+    {
+        SetupS3Object();
+
+        _analysisServiceMock
+            .Setup(a => a.AnalyzeAsync("prebuilt-read", It.IsAny<Stream>()))
+            .ReturnsAsync(FakeAnalyzeResult.WithLines("Umowa najmu lokalu mieszkalnego"));
+
+        _classifierMock
+            .Setup(c => c.ClassifyAsync(It.IsAny<string>()))
+            .ReturnsAsync(new ClassificationResult("legal", 0.91f, "prebuilt-document"));
+
+        _analysisServiceMock
+            .Setup(a => a.AnalyzeAsync("prebuilt-document", It.IsAny<Stream>()))
+            .ReturnsAsync(FakeAnalyzeResult.WithKeyValuePairs(
+                new Dictionary<string, string> { ["Czynsz"] = "2 900 zł" }));
+
+        _contextMock.Setup(c => c.Message).Returns(_message);
+
+        DocumentProcessed? published = null;
+        _contextMock
+            .Setup(c => c.Publish(It.IsAny<DocumentProcessed>(), default))
+            .Callback<DocumentProcessed, CancellationToken>((evt, _) => published = evt)
+            .Returns(Task.CompletedTask);
+
+        await CreateSut().Consume(_contextMock.Object);
+
+        Assert.NotNull(published);
+        Assert.Equal("legal", published!.DocumentType);
+        Assert.Equal("2 900 zł", published.ExtractedFields["Czynsz"]);
+    }
+
+    [Fact]
+    public async Task Consume_SkipsClassifier_WhenDocumentHasAlmostNoText()
+    {
+        SetupS3Object();
+
+        _analysisServiceMock
+            .Setup(a => a.AnalyzeAsync("prebuilt-read", It.IsAny<Stream>()))
+            .ReturnsAsync(FakeAnalyzeResult.WithLines("abc"));
+
+        _contextMock.Setup(c => c.Message).Returns(_message);
+
+        DocumentProcessed? published = null;
+        _contextMock
+            .Setup(c => c.Publish(It.IsAny<DocumentProcessed>(), default))
+            .Callback<DocumentProcessed, CancellationToken>((evt, _) => published = evt)
+            .Returns(Task.CompletedTask);
+
+        await CreateSut().Consume(_contextMock.Object);
+
+        Assert.NotNull(published);
+        Assert.Equal("other", published!.DocumentType);
+        _classifierMock.Verify(c => c.ClassifyAsync(It.IsAny<string>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Consume_Succeeds_WhenAnalysisServiceClosesTheStreamAfterEachCall()
+    {
+        SetupS3Object();
+
+        // Prawdziwy klient Azure zamyka przekazany strumień; mock robi to samo.
+        _analysisServiceMock
+            .Setup(a => a.AnalyzeAsync("prebuilt-read", It.IsAny<Stream>()))
+            .Callback<string, Stream>((_, stream) => stream.Dispose())
+            .ReturnsAsync(FakeAnalyzeResult.WithLines("Faktura VAT 123/2026"));
+
+        _classifierMock
+            .Setup(c => c.ClassifyAsync(It.IsAny<string>()))
+            .ReturnsAsync(new ClassificationResult("invoice", 0.95f, "prebuilt-invoice"));
+
+        _analysisServiceMock
+            .Setup(a => a.AnalyzeAsync("prebuilt-invoice", It.IsAny<Stream>()))
+            .Callback<string, Stream>((_, stream) => stream.Dispose())
+            .ReturnsAsync(FakeAnalyzeResult.WithDocumentFields(
+                "invoice",
+                new Dictionary<string, string> { ["Total"] = "1234.56 PLN" }));
+
+        _contextMock.Setup(c => c.Message).Returns(_message);
+        _contextMock
+            .Setup(c => c.Publish(It.IsAny<DocumentProcessed>(), default))
+            .Returns(Task.CompletedTask);
+
+        await CreateSut().Consume(_contextMock.Object);
+
+        _contextMock.Verify(c => c.Publish(It.IsAny<DocumentProcessed>(), default), Times.Once);
+    }
+
+    [Fact]
     public async Task Consume_RethrowsAndDoesNotPublish_WhenS3Fails()
     {
         _s3ClientMock
@@ -164,5 +253,18 @@ internal static class FakeAnalyzeResult
         return DocumentAnalysisModelFactory.AnalyzeResult(
             pages: new List<DocumentPage>(),
             documents: new List<AnalyzedDocument> { document });
+    }
+
+    public static AnalyzeResult WithKeyValuePairs(Dictionary<string, string> pairs)
+    {
+        var keyValuePairs = pairs.Select(pair => DocumentAnalysisModelFactory.DocumentKeyValuePair(
+            key: DocumentAnalysisModelFactory.DocumentKeyValueElement(content: pair.Key),
+            value: DocumentAnalysisModelFactory.DocumentKeyValueElement(content: pair.Value),
+            confidence: 0.9f));
+
+        return DocumentAnalysisModelFactory.AnalyzeResult(
+            pages: new List<DocumentPage>(),
+            keyValuePairs: keyValuePairs.ToList(),
+            documents: new List<AnalyzedDocument>());
     }
 }

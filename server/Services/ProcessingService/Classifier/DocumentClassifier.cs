@@ -4,6 +4,8 @@ namespace ProcessingService.Classifier;
 
 public class DocumentClassifier : IDocumentClassifier
 {
+    private const float MinimumConfidence = 0.6f;
+
     private readonly HttpClient _http;
     private readonly ILogger<DocumentClassifier> _logger;
 
@@ -23,13 +25,12 @@ public class DocumentClassifier : IDocumentClassifier
 
         var result = await response.Content.ReadFromJsonAsync<ClassificationResponse>() ?? throw new InvalidOperationException("Failed to deserialize classification response.");
 
-        if (result!.Confidence < 0.6f)
+        if (result.Confidence < MinimumConfidence)
         {
             _logger.LogWarning("Low confidence {conf} for doc, falling back to 'other'", result.Confidence);
-            return new ClassificationResult("other", result.Confidence, result.AzureModel);
+            return new ClassificationResult("other", result.Confidence, "prebuilt-read");
         }
 
         return new ClassificationResult(result.DocumentType, result.Confidence, result.AzureModel);
     }
 }
-

@@ -43,7 +43,5 @@ public class DocumentProcessedConsumer : IConsumer<DocumentProcessed>
             _logger.LogError(ex, "Failed to save document {Id} to database", message.DocumentId);
             throw;
         }
-
-        _logger.LogInformation("Document {Id} saved to database.", message.DocumentId);
     }
 }

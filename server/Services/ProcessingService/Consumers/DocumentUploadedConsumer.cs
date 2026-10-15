@@ -9,6 +9,8 @@ namespace ProcessingService.Consumers;
 
 public class DocumentUploadedConsumer : IConsumer<DocumentUploaded>
 {
+    private const int MinTextLength = 10;
+
     private readonly ILogger<DocumentUploadedConsumer> _logger;
     private readonly IAmazonS3 _s3Client;
     private readonly IDocumentAnalysisService _analysisService;
@@ -45,10 +47,21 @@ public class DocumentUploadedConsumer : IConsumer<DocumentUploaded>
             AnalyzeResult readResult = await _analysisService.AnalyzeAsync("prebuilt-read", readStream);
             var extractedText = string.Join(
                 " ",
-                readResult.Pages.SelectMany(p => p.Lines).Select(l => l.Content));
+                readResult.Pages.SelectMany(p => p.Lines).Select(l => l.Content)
+            );
 
-            _logger.LogInformation("Sending to classifier...");
-            ClassificationResult classificationResult = await _documentClassifier.ClassifyAsync(extractedText);
+            ClassificationResult classificationResult;
+
+            if (extractedText.Trim().Length < MinTextLength)
+            {
+                _logger.LogWarning("Document {id} has too little text to classify, treating it as 'other'", message.DocumentId);
+                classificationResult = new ClassificationResult("other", 0f, "prebuilt-read");
+            }
+            else
+            {
+                _logger.LogInformation("Sending to classifier...");
+                classificationResult = await _documentClassifier.ClassifyAsync(extractedText);
+            }
 
             AnalyzeResult result;
             if (classificationResult.AzureModel == "prebuilt-read")
@@ -62,37 +75,17 @@ public class DocumentUploadedConsumer : IConsumer<DocumentUploaded>
                 result = await _analysisService.AnalyzeAsync(classificationResult.AzureModel, modelStream);
             }
 
-            var extractedData = new Dictionary<string, string>();
-            string docType = classificationResult.DocumentType;
-
-            if (result.Documents.Count > 0)
-            {
-                var doc = result.Documents[0];
-                docType = doc.DocumentType;
-
-                foreach (var field in doc.Fields)
-                {
-                    extractedData[field.Key] = field.Value.Content;
-                    _logger.LogInformation("Field: {key} = {value}", field.Key, field.Value.Content);
-                }
-            }
-            else
-            {
-                _logger.LogWarning("No structured document found. Extracting raw lines...");
-                foreach (var page in result.Pages)
-                {
-                    foreach (var line in page.Lines)
-                    {
-                        _logger.LogInformation("Raw text: {text}", line.Content);
-                    }
-                }
-            }
+            var extractedData = ExtractedFields(result);
+            _logger.LogInformation(
+                "Document {id} classified as {type}, extracted {count} fields",
+                message.DocumentId, classificationResult.DocumentType, extractedData.Count
+            );
 
             await context.Publish(new DocumentProcessed(
                 message.DocumentId,
                 message.FileName,
                 message.BlobUrl,
-                docType,
+                classificationResult.DocumentType,
                 extractedData,
                 DateTime.UtcNow
             ));
@@ -104,5 +97,29 @@ public class DocumentUploadedConsumer : IConsumer<DocumentUploaded>
             _logger.LogError(ex, "Error in FormRecognizer Consumer: {id}", message.DocumentId);
             throw;
         }
+    }
+
+    private static Dictionary<string, string> ExtractedFields(AnalyzeResult result)
+    {
+        var extractedData = new Dictionary<string, string>();
+
+        if (result.Documents.Count > 0)
+        {
+            foreach (var field in result.Documents[0].Fields)
+            {
+                extractedData[field.Key] = field.Value.Content ?? string.Empty;
+            }
+        }
+        else
+        {
+            foreach (var keyValuePair in result.KeyValuePairs)
+            {
+                if (keyValuePair.Value is not null)
+                {
+                    extractedData[keyValuePair.Key.Content] = keyValuePair.Value.Content;
+                }
+            }
+        }
+        return extractedData;
     }
 }

@@ -1,62 +1,89 @@
 # AI Document Processing Platform
 
-### Project Overview
+## Project Overview
 
-**AI Document Processing Platform** is a microservices-based backend system designed to automatically process uploaded documents (such as invoices or PDFs) using AI OCR and extract structured data.
+**AI Document Processing Platform** is a microservices-based system that classifies uploaded PDF documents and extracts structured data from them.
 
-The project demonstrates event-driven architecture, asynchronous processing, and integration with external AI services. It is designed as a lean, production-style system that showcases modern backend practices used in real-world distributed applications.
+A document goes through three steps: OCR, classification by a self-trained model, and field extraction by Azure AI Document Intelligence. The project demonstrates event-driven architecture, asynchronous processing, and integration with external AI services.
 
 ---
 
-### System Architecture
+## System Architecture
 
 ![system-architecture](./docs/system-architecture.drawio.png)
 
 * **Microservices Architecture:** Upload, Processing, and Document services operate independently.
 * **Event-Driven Communication:** Services communicate via RabbitMQ events.
 * **API Gateway:** YARP routes requests from frontend to backend services.
-* **Asynchronous Processing:** AI processing runs in background workers.
+* **Asynchronous Processing:** AI processing runs in a background worker.
+* **Classifier Service:** A separate Python service decides the document type before data extraction.
 
 ---
 
-### Technologies Used
+## Key Features
 
-#### Backend
+### Document Upload
+* **File Upload API:** Upload PDF documents through a single endpoint.
+* **Object Storage:** Files are stored in MinIO.
+* **Event Publishing:** Upload triggers a `DocumentUploaded` event.
+
+### AI Processing
+* **Background Worker:** Processing service consumes events from RabbitMQ.
+* **OCR:** Text is read from the document using Azure AI Document Intelligence.
+* **Classification:** A fine-tuned DistilBERT model assigns one of eight types: `invoice`, `receipt`, `bank_statement`, `tax_document`, `legal`, `hr`, `logistics`, `other`.
+* **Structured Data:** The document type selects the Azure model used to extract fields (e.g. amount, date, vendor).
+
+### Data Storage
+* **Metadata Storage:** Processed documents and their extracted fields are saved in PostgreSQL.
+* **Document List:** The frontend shows processed documents with their type and fields.
+
+---
+
+## Technologies Used
+
+### Backend
 * **.NET 8 (C#)** – Core backend framework
 * **Entity Framework Core** – ORM for database operations
 * **MassTransit** – Messaging abstraction for RabbitMQ
+* **YARP** – API gateway
 
-#### Infrastructure
-* **PostgreSQL** – Relational database with Full-Text Search
+### Machine Learning
+* **Python + FastAPI** – Classifier service
+* **DistilBERT (Hugging Face Transformers)** – Document type classification
+* **Azure AI Document Intelligence** – OCR and document data extraction
+
+### Frontend
+* **React + Vite** – Lightweight frontend interface
+
+### Infrastructure
+* **PostgreSQL** – Relational database
 * **RabbitMQ** – Event bus for service communication
 * **MinIO** – S3-compatible object storage for documents
 * **Docker Compose** – Local microservices infrastructure
 
-#### AI & Frontend
-* **Azure AI Document Intelligence** – OCR and document data extraction
-* **React + Vite** – Lightweight frontend interface
-* **YARP Gateway** – Unified API entry point
-
 ---
 
-### Local Setup
+## Local Setup
 
-#### Requirements
+### Requirements
 
-- Docker
+- Docker with Compose v2
+- Python 3.12 (to download the classifier model)
 - An Azure AI Document Intelligence resource (endpoint + key)
-- The classifier model files in `server/ML/classifier-service/model`
 
-For running services outside Docker: .NET SDK 8, Node 22, Python 3.12.
+For running services outside Docker: .NET SDK 8 and Node 22.
 
-#### Getting started
+### 1. Clone the repository
 
 ```bash
-git clone git@github.com:maksluczak/document-ai-platform.git
+git clone https://github.com/maksluczak/document-ai-platform.git
 cd document-ai-platform
+cp .env.example .env
 ```
 
-#### Azure AI Document Intelligence key
+### 2. Create an Azure AI Document Intelligence key
+
+The free tier (F0) is enough. With the Azure CLI:
 
 ```bash
 az login
@@ -70,41 +97,89 @@ az cognitiveservices account keys list --name <unique-name> \
     --resource-group rg-document-ai --query key1 -o tsv
 ```
 
+The same resource can be created in the Azure portal: "Document Intelligence" → Create → pricing tier F0. The endpoint and key are in the "Keys and Endpoint" tab.
+
 Put both values into `.env` as `AZURE_AI_ENDPOINT` and `AZURE_AI_KEY`.
 
-#### Model
+> The free tier analyzes only the first two pages of each document.
+
+### 3. Download the classifier model
+
 ```bash
 cd server/ML/classifier-service
-python -m venv venv
-source ./bin/venv/activate
-pip install -r reqirements.txt -r reqirements-dev.txt
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements-dev.txt
 python scripts/download_model.py
+cd ../../..
 ```
 
-#### Start application
+The model is downloaded from the Hugging Face Hub (`maksluczak/document-classifier`) into `server/ML/classifier-service/model`.
+
+### 4. Start the application
+
 ```bash
-cp .env.example .env # fill in AZURE_AI_ENDPOINT and AZURE_AI_KEY
 docker compose up --build
 ```
 
-- Application: http://localhost:3000
-- RabbitMQ console: http://localhost:15672
-- MinIO console: http://localhost:9001
+| Service | Address | Login |
+|---|---|---|
+| Application | http://localhost:3000 | – |
+| RabbitMQ console | http://localhost:15672 | `RABBITMQ_USER` / `RABBITMQ_PASSWORD` from `.env` |
+| MinIO console | http://localhost:9001 | `MINIO_ROOT_USER` / `MINIO_ROOT_PASSWORD` from `.env` |
+
+### Stopping
+
+```bash
+docker compose down # stop containers, keep data
+docker compose down -v # stop containers and delete data
+```
 
 ---
 
-### Key Features
+## API
 
-#### Document Upload
-* **File Upload API:** Upload PDF documents through a single endpoint.
-* **Object Storage:** Files are stored in MinIO.
-* **Event Publishing:** Upload triggers a `DocumentUploaded` event.
+All requests go through the gateway, available under the same address as the application.
 
-#### AI Processing
-* **Background Worker:** Processing service consumes events from RabbitMQ.
-* **AI Integration:** Documents are analyzed using Azure Document Intelligence.
-* **Structured Data:** Extracted metadata (e.g. amount, date, vendor) is parsed from AI responses.
+| Method | Path | Description |
+|---|---|---|
+| `POST` | `/api/upload` | Upload one or more PDF documents |
+| `GET` | `/api/documents` | List processed documents |
 
-#### Data Storage & Search
-* **Metadata Storage:** Processed documents saved in PostgreSQL.
-* **Processing Status:** Documents tracked as `Processing` or `Completed`.
+---
+
+## Tests
+
+```bash
+# backend
+cd server
+dotnet test
+
+# classifier
+cd server/ML/classifier-service
+source venv/bin/activate
+pip install -r requirements.txt -r requirements-dev.txt
+pytest
+```
+
+---
+
+## Project Structure
+
+```
+.
+├── client
+├── docker-compose.yaml
+├── docs
+└── server
+    ├── ML
+    │   └── classifier-service
+    ├── Services
+    │   ├── ApiGateway
+    │   ├── DocumentService
+    │   ├── ProcessingService
+    │   └── UploadService
+    ├── Shared
+    │   └── Contracts
+    └── Tests
+```

@@ -1,9 +1,9 @@
-namespace DocumentService.Consumers;
-
 using DocumentService.Data;
 using DocumentService.Models;
 using Contracts.Events;
 using MassTransit;
+
+namespace DocumentService.Consumers;
 
 public class DocumentProcessedConsumer : IConsumer<DocumentProcessed>
 {
@@ -23,16 +23,24 @@ public class DocumentProcessedConsumer : IConsumer<DocumentProcessed>
         _logger.LogInformation("New Message Received in DocumentService");
         _logger.LogInformation("Document ID: {id}", message.DocumentId);
 
-        var document = new ProcessedDocument
+        var document = await _dbContext.Documents.FindAsync(message.DocumentId);
+        if (document is null)
         {
-            Id = message.DocumentId,
-            FileName = message.FileName,
-            BlobUrl = message.BlobUrl,
-            DocumentType = message.DocumentType,
-            Metadata = message.ExtractedFields ?? new Dictionary<string, string>(),
-            ProcessedAt = message.ProcessedAt
-        };
-        _dbContext.Documents.Add(document);
+            document = new ProcessedDocument
+            {
+                Id = message.DocumentId,
+                FileName = message.FileName,
+                BlobUrl = message.BlobUrl,
+                UploadedAt = message.ProcessedAt
+            };
+            _dbContext.Documents.Add(document);
+        }
+        document.DocumentType = message.DocumentType;
+        document.Metadata = message.ExtractedFields ?? new Dictionary<string, string>();
+        document.ProcessedAt = message.ProcessedAt;
+        document.DocumentStatus = Status.Completed;
+        document.Error = null;
+
         try
         {
             await _dbContext.SaveChangesAsync();

@@ -20,6 +20,8 @@ builder.Services.AddDbContext<DocumentDbContext>((serviceProvider, options) =>
 builder.Services.AddMassTransit(registration =>
 {
     registration.AddConsumer<DocumentProcessedConsumer>();
+    registration.AddConsumer<DocumentUploadedStatusConsumer>();
+    registration.AddConsumer<DocumentUploadedFaultConsumer>();
 
     registration.UsingRabbitMq((context, rabbitMq) =>
     {

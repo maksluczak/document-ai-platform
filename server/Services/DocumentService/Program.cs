@@ -3,10 +3,13 @@ using DocumentService.Consumers;
 using Microsoft.EntityFrameworkCore;
 using MassTransit;
 using Npgsql;
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options => options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
+
 var connectionString = builder.Configuration.GetConnectionString("PostgresDb")
     ?? throw new InvalidOperationException("Missing ConnectionStrings:PostgresDb");
 

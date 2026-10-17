@@ -18,7 +18,7 @@ namespace DocumentService.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "8.0.25")
+                .HasAnnotation("ProductVersion", "8.0.11")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -33,8 +33,14 @@ namespace DocumentService.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<int>("DocumentStatus")
+                        .HasColumnType("integer");
+
                     b.Property<string>("DocumentType")
                         .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Error")
                         .HasColumnType("text");
 
                     b.Property<string>("FileName")
@@ -45,7 +51,10 @@ namespace DocumentService.Migrations
                         .IsRequired()
                         .HasColumnType("jsonb");
 
-                    b.Property<DateTime>("ProcessedAt")
+                    b.Property<DateTime?>("ProcessedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("UploadedAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");

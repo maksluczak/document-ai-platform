@@ -1,7 +1,6 @@
 using DocumentService.Data;
 using Contracts.Events;
 using DocumentService.Models;
-using Microsoft.EntityFrameworkCore;
 
 using MassTransit;
 

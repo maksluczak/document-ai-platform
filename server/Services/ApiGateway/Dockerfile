@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
 COPY Services/ApiGateway/ApiGateway.csproj Services/ApiGateway/
@@ -7,7 +7,7 @@ RUN dotnet restore Services/ApiGateway/ApiGateway.csproj
 COPY Services/ApiGateway/ Services/ApiGateway/
 RUN dotnet publish Services/ApiGateway/ApiGateway.csproj -c Release -o /app --no-restore
 
-FROM mcr.microsoft.com/dotnet/aspnet:8.0
+FROM mcr.microsoft.com/dotnet/aspnet:10.0
 WORKDIR /app
 COPY --from=build /app .
 USER $APP_UID

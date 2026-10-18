@@ -42,7 +42,7 @@ A document goes through three steps: OCR, classification by a self-trained model
 ## Technologies Used
 
 ### Backend
-* **.NET 8 (C#)** – Core backend framework
+* **.NET 10 (C#)** – Core backend framework
 * **Entity Framework Core** – ORM for database operations
 * **MassTransit** – Messaging abstraction for RabbitMQ
 * **YARP** – API gateway
@@ -71,7 +71,7 @@ A document goes through three steps: OCR, classification by a self-trained model
 - Python 3.12 (to download the classifier model)
 - An Azure AI Document Intelligence resource (endpoint + key)
 
-For running services outside Docker: .NET SDK 8 and Node 22.
+For running services outside Docker: .NET SDK 10 and Node 22.
 
 ### 1. Clone the repository
 

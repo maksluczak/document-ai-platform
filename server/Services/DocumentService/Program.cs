@@ -35,6 +35,7 @@ builder.Services.AddMassTransit(registration =>
             hostSettings.Username(rabbitMqSection["Username"] ?? "guest");
             hostSettings.Password(rabbitMqSection["Password"] ?? "guest");
         });
+        rabbitMq.UseMessageRetry(retry => retry.Interval(3, TimeSpan.FromSeconds(2)));
         rabbitMq.ConfigureEndpoints(context);
     });
 });

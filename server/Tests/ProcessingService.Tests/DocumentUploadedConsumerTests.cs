@@ -8,7 +8,6 @@ using Moq;
 using ProcessingService.Analysis;
 using ProcessingService.Classifier;
 using ProcessingService.Consumers;
-using Xunit;
 
 namespace ProcessingService.Tests.Consumers;
 

@@ -48,10 +48,6 @@ secrets.json
 .docker/
 docker-compose.override.yml
 
-# Local volumes
-infrastructure/db_data/
-infrastructure/minio_data/
-
 # =========================
 # Node / React
 # =========================

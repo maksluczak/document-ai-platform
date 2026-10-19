@@ -1,8 +1,7 @@
-namespace UploadService.Tests;
-
-using Xunit;
 using FluentAssertions;
 using UploadService.Validation;
+
+namespace UploadService.Tests;
 
 public class FileValidatorTests
 {

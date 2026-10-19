@@ -9,6 +9,8 @@ using Microsoft.AspNetCore.Mvc;
 using FluentAssertions;
 using UploadService.Validation;
 
+namespace UploadService.Tests;
+
 public class DocumentControllerTests
 {
     [Fact]

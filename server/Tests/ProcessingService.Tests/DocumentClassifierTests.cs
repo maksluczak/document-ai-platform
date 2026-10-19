@@ -4,7 +4,6 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using Moq.Protected;
 using ProcessingService.Classifier;
-using Xunit;
 
 namespace ProcessingService.Tests.Classifier;
 

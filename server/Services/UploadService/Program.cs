@@ -7,8 +7,6 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 
-builder.Services.Configure<MinIoOptions>(builder.Configuration.GetSection("MinIOConnection"));
-
 builder.Services.AddSingleton<IAmazonS3>(sp =>
 {
     var options = builder.Configuration.GetSection("MinIOConnection").Get<MinIoOptions>();

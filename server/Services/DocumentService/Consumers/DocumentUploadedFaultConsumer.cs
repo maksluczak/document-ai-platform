@@ -1,8 +1,9 @@
 using DocumentService.Data;
 using Contracts.Events;
 using DocumentService.Models;
-
 using MassTransit;
+
+namespace DocumentService.Consumers;
 
 public class DocumentUploadedFaultConsumer : IConsumer<Fault<DocumentUploaded>>
 {

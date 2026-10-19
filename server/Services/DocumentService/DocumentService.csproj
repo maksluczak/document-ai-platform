@@ -4,7 +4,6 @@
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <UserSecretsId>dotnet-DocumentService-22bd8f76-4ab8-4a79-af74-34f7c23a3e04</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>

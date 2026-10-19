@@ -5,6 +5,7 @@ using MassTransit;
 using ProcessingService.Consumers;
 using ProcessingService.Analysis;
 using ProcessingService.Classifier;
+using ProcessingService.Messaging;
 
 var builder = Host.CreateApplicationBuilder(args);
 
@@ -53,11 +54,12 @@ builder.Services.AddMassTransit(registration =>
             hostSettings.Password(rabbitMqSection["Password"] ?? "guest");
         });
 
-        rabbitMq.UseMessageRetry(retry =>
-        {
-            retry.Ignore<RequestFailedException>(exception => exception.Status is >= 400 and < 500 and not 429);
-            retry.Exponential(5, TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(60), TimeSpan.FromSeconds(5));
-        });
+        rabbitMq.UseMessageRetry(retry => RetryPolicy.Configure(
+            retry,
+            minInterval: TimeSpan.FromSeconds(2),
+            maxInterval: TimeSpan.FromSeconds(60),
+            intervalDelta: TimeSpan.FromSeconds(5)
+            ));
         rabbitMq.ConfigureEndpoints(context);
     });
 });

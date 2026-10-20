@@ -1,0 +1,84 @@
+name: ci
+
+on: 
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: server
+    steps:
+      - uses: actions/checkout@v6
+      - name: Setup dotnet
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: server/global.json
+      - name: Install dependencies
+        run: dotnet restore document-ai-platform.sln
+      - name: Apply code formatter
+        run: dotnet format document-ai-platform.sln --verify-no-changes --no-restore
+      - name: Build a project
+        run: dotnet build document-ai-platform.sln --configuration Release --no-restore -warnaserror -p:WarningsNotAsErrors=NU1900
+      - name: Test with dotnet
+        run: dotnet test document-ai-platform.sln --configuration Release --no-build
+
+  classifier:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: server/ML/classifier-service
+    steps:
+      - uses: actions/checkout@v6
+      - name: Setup python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: server/ML/classifier-service/requirements*.txt
+      - name: Install dependencies
+        run: pip install --extra-index-url https://download.pytorch.org/whl/cpu -r requirements.txt -r requirements-dev.txt
+      - name: Test with python
+        run: pytest
+
+  client:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: client
+    steps:
+      - uses: actions/checkout@v6
+      - name: Use Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: client/package-lock.json
+      - name: Install dependencies
+        run: npm ci
+      - name: Check code quality
+        run: npm run lint
+      - name: Build a project
+        run: npm run build
+
+  docker:
+    needs: [backend, classifier, client]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Prepare environment file
+        run: cp .env.example .env
+      - name: Validate docker compose configuration
+        run: docker compose config --quiet
+      - name: Build docker images
+        run: docker compose build

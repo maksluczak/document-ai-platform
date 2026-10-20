@@ -1,0 +1,64 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: upload-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: upload-service
+  template:
+    metadata:
+      labels:
+        app: upload-service
+    spec:
+      containers:
+        - name: upload-service
+          image: document-ai-platform-upload-service:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8080
+          env:
+            - name: RabbitMqConnection__Host
+              value: rabbitmq
+            - name: RabbitMqConnection__Username
+              valueFrom:
+                secretKeyRef:
+                  name: platform-secrets
+                  key: RABBITMQ_USER
+            - name: RabbitMqConnection__Password
+              valueFrom:
+                secretKeyRef:
+                  name: platform-secrets
+                  key: RABBITMQ_PASSWORD
+            - name: MinIOConnection__ServiceUrl
+              value: http://minio:9000
+            - name: MinIOConnection__Username
+              valueFrom:
+                secretKeyRef:
+                  name: platform-secrets
+                  key: MINIO_ROOT_USER
+            - name: MinIOConnection__Password
+              valueFrom:
+                secretKeyRef:
+                  name: platform-secrets
+                  key: MINIO_ROOT_PASSWORD
+          readinessProbe:
+            tcpSocket:
+              port: 8080
+            periodSeconds: 5
+          livenessProbe:
+            tcpSocket:
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: upload-service
+spec:
+  selector:
+    app: upload-service
+  ports:
+    - port: 8080

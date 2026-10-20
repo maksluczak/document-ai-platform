@@ -1,0 +1,68 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: document-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: document-service
+  template:
+    metadata:
+      labels:
+        app: document-service
+    spec:
+      initContainers:
+        - name: wait-for-database
+          image: postgres:17
+          command: ["sh", "-c", "until pg_isready -h database -p 5432; do echo waiting for database; sleep 2; done"]
+      containers:
+        - name: document-service
+          image: document-ai-platform-document-service:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8080
+          env:
+            - name: RabbitMqConnection__Host
+              value: rabbitmq
+            - name: RabbitMqConnection__Username
+              valueFrom:
+                secretKeyRef:
+                  name: platform-secrets
+                  key: RABBITMQ_USER
+            - name: RabbitMqConnection__Password
+              valueFrom:
+                secretKeyRef:
+                  name: platform-secrets
+                  key: RABBITMQ_PASSWORD
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: platform-secrets
+                  key: POSTGRES_USER
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: platform-secrets
+                  key: POSTGRES_PASSWORD
+            - name: ConnectionStrings__PostgresDb
+              value: Host=database;Port=5432;Database=DocumentDb;Username=$(POSTGRES_USER);Password=$(POSTGRES_PASSWORD)
+          readinessProbe:
+            tcpSocket:
+              port: 8080
+            periodSeconds: 5
+          livenessProbe:
+            tcpSocket:
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: document-service
+spec:
+  selector:
+    app: document-service
+  ports:
+    - port: 8080

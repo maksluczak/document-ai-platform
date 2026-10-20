@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: classifier
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: classifier
+  template:
+    metadata:
+      labels:
+        app: classifier
+    spec:
+      containers:
+        - name: classifier
+          image: document-ai-platform-classifier:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8000
+          readinessProbe:
+            tcpSocket:
+              port: 8000
+            periodSeconds: 5
+          volumeMounts:
+            - name: model
+              mountPath: /models/document-classifier
+              readOnly: true
+      volumes:
+        - name: model
+          hostPath:
+            path: /models/document-classifier
+            type: Directory
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: classifier
+spec:
+  selector:
+    app: classifier
+  ports:
+    - port: 8000
